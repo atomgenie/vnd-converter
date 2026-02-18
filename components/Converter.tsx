@@ -10,7 +10,7 @@ interface ConverterProps {
 }
 
 export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
-  const [amount, setAmount] = useState<string>('100000');
+  const [amount, setAmount] = useState<string>('');
   const [direction, setDirection] = useState<'EUR_TO_VND' | 'VND_TO_EUR'>('VND_TO_EUR');
   const [result, setResult] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -120,7 +120,7 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
             inputMode="decimal"
             value={formatDisplayValue(amount)}
             onChange={handleAmountChange}
-            placeholder="0"
+            placeholder="Enter amount"
             className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder-slate-600"
           />
         </div>
