@@ -1,11 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { Wifi, WifiOff } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Download, Wifi, WifiOff } from 'lucide-react';
 import { Converter } from './components/Converter';
 import { useExchangeRate } from './hooks/useExchangeRate';
 
 const App: React.FC = () => {
   const { rateData, isLoading, fetchRate, isOnline } = useExchangeRate();
   const [showOfflineAlert, setShowOfflineAlert] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
+  const deferredPrompt = useRef<Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> } | null>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      deferredPrompt.current = e as typeof deferredPrompt.current;
+      setCanInstall(true);
+    };
+
+    const handleAppInstalled = () => {
+      deferredPrompt.current = null;
+      setCanInstall(false);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt.current) return;
+    await deferredPrompt.current.prompt();
+    const { outcome } = await deferredPrompt.current.userChoice;
+    if (outcome === 'accepted') {
+      deferredPrompt.current = null;
+      setCanInstall(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOnline) {
@@ -33,9 +66,20 @@ const App: React.FC = () => {
             </h1>
             <p className="text-slate-400 text-sm">Currency Converter</p>
           </div>
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
-            {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
-            <span>{isOnline ? 'Online' : 'Offline'}</span>
+          <div className="flex items-center gap-2">
+            {canInstall && (
+              <button
+                onClick={handleInstall}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+              >
+                <Download size={14} />
+                <span>Install</span>
+              </button>
+            )}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+              {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
+              <span>{isOnline ? 'Online' : 'Offline'}</span>
+            </div>
           </div>
         </header>
 

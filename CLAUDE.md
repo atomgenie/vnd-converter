@@ -109,3 +109,45 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+---
+
+## Project: VietEuro Converter
+
+A PWA currency converter between VND and EUR that works fully offline.
+
+### Running the project
+
+```sh
+bun install          # install dependencies
+bun run dev          # start dev server at http://localhost:3000
+bun run build        # production build → dist/
+bun run preview      # preview the production build locally
+```
+
+> Note: this project uses Vite (via `@vitejs/plugin-react`) rather than `Bun.serve()` because it predates the Bun HTML-import approach. Do not migrate it to Bun.serve() without explicit instruction.
+
+### Architecture
+
+- **Framework**: React 19 + TypeScript, bundled by Vite
+- **Styling**: Tailwind CSS via CDN (`<script src="https://cdn.tailwindcss.com">`)
+- **Icons**: `lucide-react`
+- **Exchange rate**: Fixed (`1 EUR = 30 303.03 VND`). No API calls are made; the rate is hardcoded in `hooks/useExchangeRate.ts`.
+
+### PWA / offline
+
+- **Service worker**: `public/service-worker.js` — uses stale-while-revalidate for cached resources and runtime-caches everything (including CDN scripts) as it is fetched, so the app works offline after the first online visit.
+- **Manifest**: `public/manifest.json` — references local SVG icons (`public/icon-192.svg`, `public/icon-512.svg`).
+- **Install button**: rendered in `App.tsx` when the browser fires `beforeinstallprompt`; hidden once the app is installed.
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `index.html` | HTML entry point; registers the service worker |
+| `index.tsx` | React root mount |
+| `App.tsx` | Top-level component; online/offline status, PWA install button |
+| `components/Converter.tsx` | Converter UI (bidirectional EUR ↔ VND) |
+| `hooks/useExchangeRate.ts` | Provides the fixed rate and `isOnline` state |
+| `public/service-worker.js` | Offline caching logic |
+| `public/manifest.json` | PWA manifest |
