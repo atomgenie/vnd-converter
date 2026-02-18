@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { ArrowDownUp, Euro, Banknote } from 'lucide-react';
 import { ExchangeRateData, Currency } from '../types';
 
@@ -13,6 +13,8 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
   const [amount, setAmount] = useState<string>('100000');
   const [direction, setDirection] = useState<'EUR_TO_VND' | 'VND_TO_EUR'>('VND_TO_EUR');
   const [result, setResult] = useState<number>(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const cursorRequestRef = useRef<number | null>(null);
 
   const rate = rateData?.rate || 0;
 
@@ -43,14 +45,45 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Calculate non-space characters before cursor
+    const selectionStart = e.target.selectionStart || 0;
+    const valueBeforeCursor = e.target.value.slice(0, selectionStart);
+    const nonSpaceBeforeCursor = valueBeforeCursor.replace(/\s/g, '').length;
+
     // Remove spaces to get raw value
     const val = e.target.value.replace(/\s/g, '');
     
     // Allow only numbers and one decimal point
     if (val === '' || /^\d*\.?\d*$/.test(val)) {
       setAmount(val);
+      cursorRequestRef.current = nonSpaceBeforeCursor;
     }
   };
+
+  useLayoutEffect(() => {
+    if (cursorRequestRef.current !== null && inputRef.current) {
+      const targetCount = cursorRequestRef.current;
+      const formattedValue = inputRef.current.value;
+
+      let currentCount = 0;
+      let newPos = formattedValue.length;
+
+      for (let i = 0; i < formattedValue.length; i++) {
+        if (currentCount === targetCount) {
+          newPos = i;
+          break;
+        }
+        if (formattedValue[i] !== ' ') {
+          currentCount++;
+        }
+      }
+      // If we reached the end and counts match (edge case for end of string), it's already set to length.
+      // But loop breaks early if matched.
+
+      inputRef.current.setSelectionRange(newPos, newPos);
+      cursorRequestRef.current = null;
+    }
+  }, [amount]);
 
   const formatCurrency = (val: number, currency: Currency) => {
     return new Intl.NumberFormat(currency === Currency.VND ? 'vi-VN' : 'de-DE', {
@@ -84,6 +117,7 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
             </span>
           </div>
           <input 
+            ref={inputRef}
             type="text" 
             inputMode="decimal"
             value={formatDisplayValue(amount)}
