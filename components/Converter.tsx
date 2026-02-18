@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { ArrowDownUp, Euro, Banknote } from 'lucide-react';
 import { ExchangeRateData, Currency } from '../types';
 
@@ -13,6 +13,8 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
   const [amount, setAmount] = useState<string>('100000');
   const [direction, setDirection] = useState<'EUR_TO_VND' | 'VND_TO_EUR'>('VND_TO_EUR');
   const [result, setResult] = useState<number>(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const nextCursorPos = useRef<number | null>(null);
 
   const rate = rateData?.rate || 0;
 
@@ -42,12 +44,41 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
     return parts.join('.');
   };
 
+  useLayoutEffect(() => {
+    if (nextCursorPos.current === null || !inputRef.current) return;
+
+    const formatted = formatDisplayValue(amount);
+    const rawPos = nextCursorPos.current;
+    nextCursorPos.current = null;
+
+    // Map raw cursor position (ignoring spaces) back to the formatted string position
+    let nonSpaceSeen = 0;
+    let formattedCursorPos = formatted.length;
+    for (let i = 0; i < formatted.length; i++) {
+      if (nonSpaceSeen === rawPos) {
+        formattedCursorPos = i;
+        break;
+      }
+      if (formatted[i] !== ' ') {
+        nonSpaceSeen++;
+      }
+    }
+
+    inputRef.current.setSelectionRange(formattedCursorPos, formattedCursorPos);
+  }, [amount]);
+
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputVal = e.target.value;
+    const cursorPosition = e.target.selectionStart ?? inputVal.length;
+
     // Remove spaces to get raw value
-    const val = e.target.value.replace(/\s/g, '');
-    
+    const val = inputVal.replace(/\s/g, '');
+
     // Allow only numbers and one decimal point
     if (val === '' || /^\d*\.?\d*$/.test(val)) {
+      // Track cursor position in terms of non-space characters before it
+      const spacesBeforeCursor = (inputVal.slice(0, cursorPosition).match(/\s/g) || []).length;
+      nextCursorPos.current = cursorPosition - spacesBeforeCursor;
       setAmount(val);
     }
   };
@@ -83,8 +114,9 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
               {fromCurrency}
             </span>
           </div>
-          <input 
-            type="text" 
+          <input
+            ref={inputRef}
+            type="text"
             inputMode="decimal"
             value={formatDisplayValue(amount)}
             onChange={handleAmountChange}
