@@ -1,0 +1,5 @@
+{
+  "name": "VietEuro Converter",
+  "description": "A high-performance, offline-capable PWA for currency conversion between Vietnamese Dong (VND) and Euro (EUR) using fixed exchange rates.",
+  "requestFramePermissions": []
+}
