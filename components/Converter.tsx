@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { ArrowDownUp, Euro, Banknote } from 'lucide-react';
 import { ExchangeRateData, Currency } from '../types';
 
@@ -13,6 +13,8 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
   const [amount, setAmount] = useState<string>('100000');
   const [direction, setDirection] = useState<'EUR_TO_VND' | 'VND_TO_EUR'>('VND_TO_EUR');
   const [result, setResult] = useState<number>(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pendingRawCursorPosRef = useRef<number | null>(null);
 
   const rate = rateData?.rate || 0;
 
@@ -42,7 +44,41 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
     return parts.join('.');
   };
 
+  const getFormattedCursorPos = (formattedVal: string, rawPos: number) => {
+    let digitsSeen = 0;
+
+    for (let i = 0; i < formattedVal.length; i += 1) {
+      if (formattedVal[i] !== ' ') {
+        digitsSeen += 1;
+      }
+
+      if (digitsSeen >= rawPos) {
+        return i + 1;
+      }
+    }
+
+    return formattedVal.length;
+  };
+
+  useLayoutEffect(() => {
+    if (pendingRawCursorPosRef.current === null || !inputRef.current) {
+      return;
+    }
+
+    const formattedAmount = formatDisplayValue(amount);
+    const cursorPos = getFormattedCursorPos(formattedAmount, pendingRawCursorPosRef.current);
+    inputRef.current.setSelectionRange(cursorPos, cursorPos);
+    pendingRawCursorPosRef.current = null;
+  }, [amount]);
+
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectionStart = e.target.selectionStart ?? e.target.value.length;
+
+    pendingRawCursorPosRef.current = e.target.value
+      .slice(0, selectionStart)
+      .replace(/\s/g, '')
+      .length;
+
     // Remove spaces to get raw value
     const val = e.target.value.replace(/\s/g, '');
     
@@ -84,6 +120,7 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
             </span>
           </div>
           <input 
+            ref={inputRef}
             type="text" 
             inputMode="decimal"
             value={formatDisplayValue(amount)}
