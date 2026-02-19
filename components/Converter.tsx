@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { ArrowDownUp, Euro, Banknote } from 'lucide-react';
+import { ArrowDownUp, Euro, Banknote, X } from 'lucide-react';
 import { ExchangeRateData, Currency } from '../types';
 
 interface ConverterProps {
@@ -38,6 +38,12 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
 
   const handleSwap = () => {
     setDirection(prev => prev === 'EUR_TO_VND' ? 'VND_TO_EUR' : 'EUR_TO_VND');
+  };
+
+  const handleClear = () => {
+    setAmount('');
+    nextCursorPos.current = null;
+    inputRef.current?.focus();
   };
 
   const formatDisplayValue = (val: string) => {
@@ -118,15 +124,27 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
               {fromCurrency}
             </span>
           </div>
-          <input
-            ref={inputRef}
-            type="text"
-            inputMode="decimal"
-            value={formatDisplayValue(amount)}
-            onChange={handleAmountChange}
-            placeholder="Enter amount"
-            className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder-slate-600"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="decimal"
+              value={formatDisplayValue(amount)}
+              onChange={handleAmountChange}
+              placeholder="Enter amount"
+              className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder-slate-600"
+            />
+            {amount && (
+              <button
+                type="button"
+                onClick={handleClear}
+                aria-label="Clear amount"
+                className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/70 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Swap Button */}
