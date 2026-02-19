@@ -13,7 +13,7 @@ export const useExchangeRate = () => {
   const rateData: ExchangeRateData = {
     rate: RATE_EUR_TO_VND,
     lastUpdated: new Date().toISOString(),
-    source: "Fixed Rate (10 000 000 000 VND = 326 224 EUR)"
+    source: "Fixed Rate (100 VND ≈ 0.00326 EUR)"
   };
 
   // Monitor network status for UI feedback only
