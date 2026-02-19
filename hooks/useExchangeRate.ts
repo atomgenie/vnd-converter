@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ExchangeRateData } from '../types';
 
-// Fixed Rate: 1 VND = 0.000033 EUR
-// The app uses EUR to VND as base rate.
-// 1 EUR = 1 / 0.000033 VND
-const RATE_EUR_TO_VND = 1 / 0.000033;
+// Fixed Rate: 10 000 000 000 VND = 326 224 EUR
+// 1 EUR = 10 000 000 000 / 326 224 ≈ 30 653.78 VND
+// 1 VND = 326 224 / 10 000 000 000 = 0.0000326224 EUR
+const RATE_EUR_TO_VND = 10_000_000_000 / 326_224;
 
 export const useExchangeRate = () => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -13,7 +13,7 @@ export const useExchangeRate = () => {
   const rateData: ExchangeRateData = {
     rate: RATE_EUR_TO_VND,
     lastUpdated: new Date().toISOString(),
-    source: "Fixed Rate (1 VND = 0,000033 EUR)"
+    source: "Fixed Rate (100 VND ≈ 0.00326 EUR)"
   };
 
   // Monitor network status for UI feedback only
