@@ -125,7 +125,6 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
               ref={inputRef}
               type="text"
               inputMode="decimal"
-              autoFocus
               value={formatDisplayValue(amount)}
               onChange={handleAmountChange}
               placeholder="Enter amount"
