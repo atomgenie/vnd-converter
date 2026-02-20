@@ -19,10 +19,6 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
   const rate = rateData?.rate || 0;
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
     const val = parseFloat(amount);
     if (isNaN(val) || !rate) {
       setResult(0);
