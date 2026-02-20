@@ -19,7 +19,11 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
   const rate = rateData?.rate || 0;
 
   useEffect(() => {
-    inputRef.current?.focus();
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
