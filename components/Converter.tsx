@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { ArrowDownUp, Euro, Banknote, X } from 'lucide-react';
+import { ArrowDownUp, Euro, Banknote, X, TrendingUp } from 'lucide-react';
 import { ExchangeRateData, Currency } from '../types';
+
+const VND_MEDIAN_INCOME = 6_500_000;
+const EUR_MEDIAN_INCOME = 2_190;
 
 interface ConverterProps {
   rateData: ExchangeRateData | null;
@@ -166,6 +169,28 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
           </div>
         </div>
       </div>
+
+      {/* Income Proportion Estimate (VND → EUR only) */}
+      {direction === 'VND_TO_EUR' && result > 0 && (() => {
+        const proportion = parseFloat(amount) / VND_MEDIAN_INCOME;
+        const eurEquivalent = proportion * EUR_MEDIAN_INCOME;
+        const percentStr = (proportion * 100).toLocaleString('en', { maximumFractionDigits: 1 });
+        const eurStr = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(eurEquivalent);
+        return (
+          <div className="mt-4 bg-amber-950/30 border border-amber-800/40 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp size={14} className="text-amber-400" />
+              <span className="text-amber-400 text-xs font-semibold uppercase tracking-wide">Income proportion estimate</span>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              {percentStr}% of Vietnamese median income (₫{VND_MEDIAN_INCOME.toLocaleString('vi-VN')}){' '}
+              → equivalent to{' '}
+              <span className="text-amber-300 font-bold">{eurStr}</span>{' '}
+              in France (median {EUR_MEDIAN_INCOME.toLocaleString('de-DE')} €/month).
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Current Rate Display */}
       <div className="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500 font-mono">
