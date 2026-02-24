@@ -1,9 +1,16 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
-import { ArrowDownUp, Euro, Banknote, X, TrendingUp, Check, Copy } from 'lucide-react';
+import { ArrowDownUp, Euro, Banknote, X, TrendingUp, Check, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 import { ExchangeRateData, Currency } from '../types';
 
 const VND_MEDIAN_INCOME = 6_500_000;
 const EUR_MEDIAN_INCOME = 2_190;
+
+const VND_Q1_INCOME = 4_500_000;
+const EUR_Q1_INCOME = 1_790;
+
+// Official PPP conversion rates (IMF)
+const VND_PER_INTL_DOLLAR = 7_130;
+const EUR_PER_INTL_DOLLAR = 0.66;
 
 const PRESETS: Record<'EUR_TO_VND' | 'VND_TO_EUR', { label: string; value: string }[]> = {
   EUR_TO_VND: [
@@ -32,6 +39,7 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
   const [direction, setDirection] = useState<'EUR_TO_VND' | 'VND_TO_EUR'>('VND_TO_EUR');
   const [result, setResult] = useState<number>(0);
   const [copied, setCopied] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const nextCursorPos = useRef<number | null>(null);
 
@@ -233,6 +241,16 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
         const eurEquivalent = proportion * EUR_MEDIAN_INCOME;
         const percentStr = (proportion * 100).toLocaleString('en', { maximumFractionDigits: 1 });
         const eurStr = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(eurEquivalent);
+
+        const intlDollars = parseFloat(amount) / VND_PER_INTL_DOLLAR;
+        const eurPPP = intlDollars * EUR_PER_INTL_DOLLAR;
+        const eurPPPStr = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(eurPPP);
+
+        const proportionQ1 = parseFloat(amount) / VND_Q1_INCOME;
+        const eurEquivalentQ1 = proportionQ1 * EUR_Q1_INCOME;
+        const percentStrQ1 = (proportionQ1 * 100).toLocaleString('en', { maximumFractionDigits: 1 });
+        const eurStrQ1 = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(eurEquivalentQ1);
+
         return (
           <div className="mt-4 bg-amber-950/20 border border-amber-800/30 rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -245,6 +263,29 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
               <span className="text-amber-300/90 font-semibold">{eurStr}</span>{' '}
               in France ({EUR_MEDIAN_INCOME.toLocaleString('de-DE')} {'\u20AC'}/mo).
             </p>
+            <button
+              type="button"
+              onClick={() => setShowMore(v => !v)}
+              className="mt-2 flex items-center gap-1 text-xs text-amber-500/60 hover:text-amber-400 transition-colors"
+            >
+              {showMore ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              {showMore ? 'Show less' : 'Show more'}
+            </button>
+            {showMore && (
+              <div className="mt-2 pt-2 border-t border-amber-800/20 space-y-2">
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  PPP equivalent:{' '}
+                  <span className="text-amber-300/90 font-semibold">{eurPPPStr}</span>{' '}
+                  (÷{VND_PER_INTL_DOLLAR.toLocaleString('de-DE')} VND/Int$, ×{EUR_PER_INTL_DOLLAR} {'\u20AC'}/Int$).
+                </p>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  {percentStrQ1}% of VN Q1 income ({'\u20AB'}{VND_Q1_INCOME.toLocaleString('vi-VN')}/mo){' '}
+                  {'\u2192'} equiv.{' '}
+                  <span className="text-amber-300/90 font-semibold">{eurStrQ1}</span>{' '}
+                  in France (Q1 · {EUR_Q1_INCOME.toLocaleString('de-DE')} {'\u20AC'}/mo).
+                </p>
+              </div>
+            )}
           </div>
         );
       })()}
