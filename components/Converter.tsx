@@ -1,49 +1,51 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
-import { ArrowDownUp, Euro, Banknote, X, TrendingUp, Check, Copy, ChevronDown, ChevronUp } from 'lucide-react';
-import { ExchangeRateData, Currency } from '../types';
+import { ArrowDownUp, X, TrendingUp, Check, Copy, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Currency,
+  ALL_CURRENCIES,
+  CURRENCY_CONFIGS,
+  PRESETS,
+  INCOME_DATA,
+} from '../data/currencies';
 
-const VND_MEDIAN_INCOME = 6_500_000;
-const EUR_MEDIAN_INCOME = 2_190;
+const LS_FROM_KEY = 'vnd-converter-from';
+const LS_TO_KEY = 'vnd-converter-to';
 
-const VND_Q1_INCOME = 4_500_000;
-const EUR_Q1_INCOME = 1_790;
-
-// Official PPP conversion rates (IMF)
-const VND_PER_INTL_DOLLAR = 7_130;
-const EUR_PER_INTL_DOLLAR = 0.66;
-
-const PRESETS: Record<'EUR_TO_VND' | 'VND_TO_EUR', { label: string; value: string }[]> = {
-  EUR_TO_VND: [
-    { label: '10', value: '10' },
-    { label: '50', value: '50' },
-    { label: '100', value: '100' },
-    { label: '500', value: '500' },
-  ],
-  VND_TO_EUR: [
-    { label: '100K', value: '100000' },
-    { label: '500K', value: '500000' },
-    { label: '1M', value: '1000000' },
-    { label: '5M', value: '5000000' },
-  ],
-};
-
-interface ConverterProps {
-  rateData: ExchangeRateData | null;
-  isLoading: boolean;
-  onRefresh: () => void;
-  isOnline: boolean;
+function loadCurrency(key: string, fallback: Currency): Currency {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored && Object.values(Currency).includes(stored as Currency)) {
+      return stored as Currency;
+    }
+  } catch {
+    // localStorage unavailable
+  }
+  return fallback;
 }
 
-export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
+interface ConverterProps {
+  getRate: (from: Currency, to: Currency) => number;
+}
+
+export const Converter: React.FC<ConverterProps> = ({ getRate }) => {
+  const [fromCurrency, setFromCurrency] = useState<Currency>(() => loadCurrency(LS_FROM_KEY, Currency.VND));
+  const [toCurrency, setToCurrency] = useState<Currency>(() => loadCurrency(LS_TO_KEY, Currency.EUR));
   const [amount, setAmount] = useState<string>('');
-  const [direction, setDirection] = useState<'EUR_TO_VND' | 'VND_TO_EUR'>('VND_TO_EUR');
   const [result, setResult] = useState<number>(0);
   const [copied, setCopied] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const nextCursorPos = useRef<number | null>(null);
 
-  const rate = rateData?.rate || 0;
+  // Persist currency selections
+  useEffect(() => {
+    try { localStorage.setItem(LS_FROM_KEY, fromCurrency); } catch {}
+  }, [fromCurrency]);
+  useEffect(() => {
+    try { localStorage.setItem(LS_TO_KEY, toCurrency); } catch {}
+  }, [toCurrency]);
+
+  const rate = getRate(fromCurrency, toCurrency);
 
   useEffect(() => {
     const val = parseFloat(amount);
@@ -51,16 +53,27 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
       setResult(0);
       return;
     }
-
-    if (direction === 'EUR_TO_VND') {
-      setResult(val * rate);
-    } else {
-      setResult(val / rate);
-    }
-  }, [amount, direction, rate]);
+    setResult(val * rate);
+  }, [amount, rate]);
 
   const handleSwap = () => {
-    setDirection(prev => prev === 'EUR_TO_VND' ? 'VND_TO_EUR' : 'EUR_TO_VND');
+    setFromCurrency(toCurrency);
+    setToCurrency(fromCurrency);
+  };
+
+  const handleFromChange = (currency: Currency) => {
+    if (currency === toCurrency) {
+      // Swap if selecting the same currency
+      setToCurrency(fromCurrency);
+    }
+    setFromCurrency(currency);
+  };
+
+  const handleToChange = (currency: Currency) => {
+    if (currency === fromCurrency) {
+      setFromCurrency(toCurrency);
+    }
+    setToCurrency(currency);
   };
 
   const handleClear = () => {
@@ -112,16 +125,16 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
   };
 
   const formatCurrency = (val: number, currency: Currency) => {
-    return new Intl.NumberFormat(currency === Currency.VND ? 'vi-VN' : 'de-DE', {
+    const config = CURRENCY_CONFIGS[currency];
+    return new Intl.NumberFormat(config.locale, {
       style: 'currency',
       currency: currency,
-      maximumFractionDigits: currency === Currency.VND ? 0 : 2
+      maximumFractionDigits: config.fractionDigits,
     }).format(val);
   };
 
   const handleCopy = useCallback(async () => {
-    if (!result || !rateData) return;
-    const toCurrency = direction === 'EUR_TO_VND' ? Currency.VND : Currency.EUR;
+    if (!result) return;
     const text = formatCurrency(result, toCurrency);
     try {
       await navigator.clipboard.writeText(text);
@@ -130,7 +143,7 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
     } catch {
       // Clipboard API not available
     }
-  }, [result, direction, rateData]);
+  }, [result, toCurrency]);
 
   const handlePreset = (value: string) => {
     nextCursorPos.current = null;
@@ -138,10 +151,12 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
     inputRef.current?.focus();
   };
 
-  const fromCurrency = direction === 'EUR_TO_VND' ? Currency.EUR : Currency.VND;
-  const toCurrency = direction === 'EUR_TO_VND' ? Currency.VND : Currency.EUR;
-  const fromFlag = fromCurrency === Currency.EUR ? '\u{1F1EA}\u{1F1FA}' : '\u{1F1FB}\u{1F1F3}';
-  const toFlag = toCurrency === Currency.EUR ? '\u{1F1EA}\u{1F1FA}' : '\u{1F1FB}\u{1F1F3}';
+  const fromConfig = CURRENCY_CONFIGS[fromCurrency];
+  const toConfig = CURRENCY_CONFIGS[toCurrency];
+
+  // Income comparison data for the current pair
+  const incomeKey = `${fromCurrency}→${toCurrency}`;
+  const incomeData = INCOME_DATA[incomeKey];
 
   return (
     <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
@@ -152,10 +167,11 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
       {/* From Input */}
       <div className="input-glow bg-slate-800/40 p-4 rounded-2xl border border-slate-700/40 transition-all">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-slate-400 text-xs font-medium flex items-center gap-2 uppercase tracking-wider">
-            <span className="text-base leading-none">{fromFlag}</span>
-            {fromCurrency}
-          </span>
+          <CurrencySelector
+            value={fromCurrency}
+            onChange={handleFromChange}
+            exclude={null}
+          />
           <span className="text-slate-600 text-xs">From</span>
         </div>
         <div className="flex items-center gap-2">
@@ -182,7 +198,7 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
 
         {/* Quick Presets */}
         <div className="flex gap-2 mt-3">
-          {PRESETS[direction].map(preset => (
+          {PRESETS[fromCurrency].map(preset => (
             <button
               key={preset.value}
               type="button"
@@ -212,15 +228,16 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
       {/* Result Display */}
       <div className="bg-slate-800/40 p-4 rounded-2xl border border-slate-700/40">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-slate-400 text-xs font-medium flex items-center gap-2 uppercase tracking-wider">
-            <span className="text-base leading-none">{toFlag}</span>
-            {toCurrency}
-          </span>
+          <CurrencySelector
+            value={toCurrency}
+            onChange={handleToChange}
+            exclude={null}
+          />
           <span className="text-slate-600 text-xs">To</span>
         </div>
         <div className="flex items-center justify-between gap-2">
           <div className="text-3xl font-bold text-emerald-400 break-all result-text tabular-nums min-h-[2.25rem]">
-            {rateData ? (result > 0 ? formatCurrency(result, toCurrency) : <span className="text-slate-700">0</span>) : '...'}
+            {result > 0 ? formatCurrency(result, toCurrency) : <span className="text-slate-700">0</span>}
           </div>
           {result > 0 && (
             <button
@@ -235,21 +252,22 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
         </div>
       </div>
 
-      {/* Income Proportion Estimate (VND -> EUR only) */}
-      {direction === 'VND_TO_EUR' && result > 0 && (() => {
-        const proportion = parseFloat(amount) / VND_MEDIAN_INCOME;
-        const eurEquivalent = proportion * EUR_MEDIAN_INCOME;
+      {/* Income Proportion Estimate (only when data exists for this pair) */}
+      {incomeData && result > 0 && (() => {
+        const { from: incFrom, to: incTo } = incomeData;
+        const proportion = parseFloat(amount) / incFrom.medianIncome;
+        const equivalentInTo = proportion * incTo.medianIncome;
         const percentStr = (proportion * 100).toLocaleString('en', { maximumFractionDigits: 1 });
-        const eurStr = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(eurEquivalent);
+        const equivStr = formatCurrency(equivalentInTo, toCurrency);
 
-        const intlDollars = parseFloat(amount) / VND_PER_INTL_DOLLAR;
-        const eurPPP = intlDollars * EUR_PER_INTL_DOLLAR;
-        const eurPPPStr = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(eurPPP);
+        const intlDollars = parseFloat(amount) / incFrom.pppPerIntlDollar;
+        const pppEquiv = intlDollars * incTo.pppPerIntlDollar;
+        const pppStr = formatCurrency(pppEquiv, toCurrency);
 
-        const proportionQ1 = parseFloat(amount) / VND_Q1_INCOME;
-        const eurEquivalentQ1 = proportionQ1 * EUR_Q1_INCOME;
+        const proportionQ1 = parseFloat(amount) / incFrom.q1Income;
+        const equivalentQ1 = proportionQ1 * incTo.q1Income;
         const percentStrQ1 = (proportionQ1 * 100).toLocaleString('en', { maximumFractionDigits: 1 });
-        const eurStrQ1 = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(eurEquivalentQ1);
+        const equivStrQ1 = formatCurrency(equivalentQ1, toCurrency);
 
         return (
           <div className="mt-4 bg-amber-950/20 border border-amber-800/30 rounded-2xl p-4">
@@ -258,10 +276,10 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
               <span className="text-amber-400/80 text-xs font-semibold uppercase tracking-wider">Income proportion</span>
             </div>
             <p className="text-slate-400 text-sm leading-relaxed">
-              {percentStr}% of VN median income ({'\u20AB'}{VND_MEDIAN_INCOME.toLocaleString('vi-VN')}/mo){' '}
+              {percentStr}% of {incFrom.countryName} median income ({incFrom.currencySymbol}{incFrom.medianIncome.toLocaleString()}/mo){' '}
               {'\u2192'} equiv.{' '}
-              <span className="text-amber-300/90 font-semibold">{eurStr}</span>{' '}
-              in France ({EUR_MEDIAN_INCOME.toLocaleString('de-DE')} {'\u20AC'}/mo).
+              <span className="text-amber-300/90 font-semibold">{equivStr}</span>{' '}
+              in {incTo.countryName} ({incTo.medianIncome.toLocaleString()} {incTo.currencySymbol}/mo).
             </p>
             <button
               type="button"
@@ -275,14 +293,14 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
               <div className="mt-2 pt-2 border-t border-amber-800/20 space-y-2">
                 <p className="text-slate-400 text-sm leading-relaxed">
                   PPP equivalent:{' '}
-                  <span className="text-amber-300/90 font-semibold">{eurPPPStr}</span>{' '}
-                  (÷{VND_PER_INTL_DOLLAR.toLocaleString('de-DE')} VND/Int$, ×{EUR_PER_INTL_DOLLAR} {'\u20AC'}/Int$).
+                  <span className="text-amber-300/90 font-semibold">{pppStr}</span>{' '}
+                  (÷{incFrom.pppPerIntlDollar.toLocaleString()} {fromCurrency}/Int$, ×{incTo.pppPerIntlDollar} {toCurrency}/Int$).
                 </p>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  {percentStrQ1}% of VN Q1 income ({'\u20AB'}{VND_Q1_INCOME.toLocaleString('vi-VN')}/mo){' '}
+                  {percentStrQ1}% of {incFrom.countryName} Q1 income ({incFrom.currencySymbol}{incFrom.q1Income.toLocaleString()}/mo){' '}
                   {'\u2192'} equiv.{' '}
-                  <span className="text-amber-300/90 font-semibold">{eurStrQ1}</span>{' '}
-                  in France (Q1 · {EUR_Q1_INCOME.toLocaleString('de-DE')} {'\u20AC'}/mo).
+                  <span className="text-amber-300/90 font-semibold">{equivStrQ1}</span>{' '}
+                  in {incTo.countryName} (Q1 · {incTo.q1Income.toLocaleString()} {incTo.currencySymbol}/mo).
                 </p>
               </div>
             )}
@@ -292,9 +310,74 @@ export const Converter: React.FC<ConverterProps> = ({ rateData }) => {
 
       {/* Rate Footer */}
       <div className="mt-5 pt-3 border-t border-slate-800/60 flex justify-between items-center text-[11px] text-slate-600 font-mono">
-        <span>1 EUR = {rateData ? new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(rateData.rate) : '...'} VND</span>
+        <span>1 {fromCurrency} = {new Intl.NumberFormat(toConfig.locale, { maximumFractionDigits: toConfig.fractionDigits }).format(rate)} {toCurrency}</span>
         <span>Fixed rate</span>
       </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Currency Selector Component
+// ---------------------------------------------------------------------------
+
+interface CurrencySelectorProps {
+  value: Currency;
+  onChange: (currency: Currency) => void;
+  exclude: Currency | null;
+}
+
+const CurrencySelector: React.FC<CurrencySelectorProps> = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const config = CURRENCY_CONFIGS[value];
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider hover:text-slate-200 transition-colors"
+      >
+        <span className="text-base leading-none">{config.flag}</span>
+        {value}
+        <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden min-w-[160px]">
+          {ALL_CURRENCIES.map(currency => {
+            const c = CURRENCY_CONFIGS[currency];
+            const isSelected = currency === value;
+            return (
+              <button
+                key={currency}
+                type="button"
+                onClick={() => { onChange(currency); setOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${
+                  isSelected
+                    ? 'bg-indigo-500/20 text-indigo-300'
+                    : 'text-slate-300 hover:bg-slate-700/60'
+                }`}
+              >
+                <span className="text-base">{c.flag}</span>
+                <span className="font-medium">{currency}</span>
+                <span className="text-slate-500 text-xs">{c.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

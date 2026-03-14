@@ -4,7 +4,7 @@ import { Converter } from './components/Converter';
 import { useExchangeRate } from './hooks/useExchangeRate';
 
 const App: React.FC = () => {
-  const { rateData, isLoading, fetchRate, isOnline } = useExchangeRate();
+  const { getRate, isOnline } = useExchangeRate();
   const [showOfflineAlert, setShowOfflineAlert] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
   const deferredPrompt = useRef<Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> } | null>(null);
@@ -92,12 +92,7 @@ const App: React.FC = () => {
 
         {/* Main Card */}
         <div className="animate-fade-in-up-delay">
-          <Converter
-            rateData={rateData}
-            isLoading={isLoading}
-            onRefresh={fetchRate}
-            isOnline={isOnline}
-          />
+          <Converter getRate={getRate} />
         </div>
 
         {/* Footer */}
