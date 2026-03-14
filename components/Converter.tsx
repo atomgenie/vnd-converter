@@ -5,7 +5,6 @@ import {
   ALL_CURRENCIES,
   CURRENCY_CONFIGS,
   PRESETS,
-  INCOME_DATA,
 } from '../data/currencies';
 
 const LS_FROM_KEY = 'vnd-converter-from';
@@ -155,8 +154,8 @@ export const Converter: React.FC<ConverterProps> = ({ getRate }) => {
   const toConfig = CURRENCY_CONFIGS[toCurrency];
 
   // Income comparison data for the current pair
-  const incomeKey = `${fromCurrency}→${toCurrency}`;
-  const incomeData = INCOME_DATA[incomeKey];
+  const fromIncomeData = CURRENCY_CONFIGS[fromCurrency].incomeData;
+  const toIncomeData = CURRENCY_CONFIGS[toCurrency].incomeData;
 
   return (
     <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-5 shadow-2xl relative">
@@ -253,8 +252,9 @@ export const Converter: React.FC<ConverterProps> = ({ getRate }) => {
       </div>
 
       {/* Income Proportion Estimate (only when data exists for this pair) */}
-      {incomeData && result > 0 && (() => {
-        const { from: incFrom, to: incTo } = incomeData;
+      {fromIncomeData && toIncomeData && result > 0 && (() => {
+        const incFrom = fromIncomeData;
+        const incTo = toIncomeData;
         const proportion = parseFloat(amount) / incFrom.medianIncome;
         const equivalentInTo = proportion * incTo.medianIncome;
         const percentStr = (proportion * 100).toLocaleString('en', { maximumFractionDigits: 1 });
