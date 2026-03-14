@@ -67,7 +67,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-indigo-300 to-emerald-400">
-                VietEuro
+                Tam Currency
               </h1>
               <p className="text-slate-500 text-xs tracking-wide">Currency Converter</p>
             </div>
