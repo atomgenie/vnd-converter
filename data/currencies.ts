@@ -10,6 +10,7 @@ export interface CurrencyConfig {
   flag: string;
   locale: string;
   fractionDigits: number;
+  incomeData?: IncomeComparisonData;
 }
 
 export interface Preset {
@@ -36,6 +37,13 @@ export const CURRENCY_CONFIGS: Record<Currency, CurrencyConfig> = {
     flag: '\u{1F1FB}\u{1F1F3}',
     locale: 'vi-VN',
     fractionDigits: 0,
+    incomeData: {
+      medianIncome: 7_700_000,   // Vietnam NSO 2024 avg monthly employee income
+      q1Income: 5_200_000,       // Est. Q1 from min wage & rural/agri avg (2024)
+      pppPerIntlDollar: 6_957,   // World Bank 2024
+      currencySymbol: '\u20AB',
+      countryName: 'VN',
+    },
   },
   [Currency.EUR]: {
     code: Currency.EUR,
@@ -43,6 +51,13 @@ export const CURRENCY_CONFIGS: Record<Currency, CurrencyConfig> = {
     flag: '\u{1F1EA}\u{1F1FA}',
     locale: 'de-DE',
     fractionDigits: 2,
+    incomeData: {
+      medianIncome: 2_183,       // INSEE/staffmatch 2025 median net/month
+      q1Income: 1_700,           // Est. from decile data (D1=1,366, median=2,183)
+      pppPerIntlDollar: 0.70,    // World Bank 2024
+      currencySymbol: '\u20AC',
+      countryName: 'France',
+    },
   },
   [Currency.USD]: {
     code: Currency.USD,
@@ -50,6 +65,13 @@ export const CURRENCY_CONFIGS: Record<Currency, CurrencyConfig> = {
     flag: '\u{1F1FA}\u{1F1F8}',
     locale: 'en-US',
     fractionDigits: 2,
+    incomeData: {
+      medianIncome: 4_200,       // BLS Q4 2024 median full-time, ~net after tax
+      q1Income: 2_800,           // Est. Q1 full-time workers, ~net after tax
+      pppPerIntlDollar: 1.00,    // USD is the reference currency
+      currencySymbol: '$',
+      countryName: 'US',
+    },
   },
 };
 
@@ -96,110 +118,6 @@ export const PRESETS: Record<Currency, Preset[]> = {
     { label: '1M', value: '1000000' },
     { label: '5M', value: '5000000' },
   ],
-};
-
-// ---------------------------------------------------------------------------
-// Income comparison data (keyed by "from→to" pair)
-// Only pairs with data will show the income proportion section.
-// ---------------------------------------------------------------------------
-
-export const INCOME_DATA: Record<string, { from: IncomeComparisonData; to: IncomeComparisonData }> = {
-  'VND→EUR': {
-    from: {
-      medianIncome: 7_700_000,   // Vietnam NSO 2024 avg monthly employee income
-      q1Income: 5_200_000,       // Est. Q1 from min wage & rural/agri avg (2024)
-      pppPerIntlDollar: 6_957,   // World Bank 2024
-      currencySymbol: '\u20AB',
-      countryName: 'VN',
-    },
-    to: {
-      medianIncome: 2_183,       // INSEE/staffmatch 2025 median net/month
-      q1Income: 1_700,           // Est. from decile data (D1=1,366, median=2,183)
-      pppPerIntlDollar: 0.70,    // World Bank 2024
-      currencySymbol: '\u20AC',
-      countryName: 'France',
-    },
-  },
-  'EUR→VND': {
-    from: {
-      medianIncome: 2_183,
-      q1Income: 1_700,
-      pppPerIntlDollar: 0.70,
-      currencySymbol: '\u20AC',
-      countryName: 'France',
-    },
-    to: {
-      medianIncome: 7_700_000,
-      q1Income: 5_200_000,
-      pppPerIntlDollar: 6_957,
-      currencySymbol: '\u20AB',
-      countryName: 'VN',
-    },
-  },
-  'VND→USD': {
-    from: {
-      medianIncome: 7_700_000,
-      q1Income: 5_200_000,
-      pppPerIntlDollar: 6_957,
-      currencySymbol: '\u20AB',
-      countryName: 'VN',
-    },
-    to: {
-      medianIncome: 4_200,       // BLS Q4 2024 median full-time, ~net after tax
-      q1Income: 2_800,           // Est. Q1 full-time workers, ~net after tax
-      pppPerIntlDollar: 1.00,    // USD is the reference currency
-      currencySymbol: '$',
-      countryName: 'US',
-    },
-  },
-  'USD→VND': {
-    from: {
-      medianIncome: 4_200,
-      q1Income: 2_800,
-      pppPerIntlDollar: 1.00,
-      currencySymbol: '$',
-      countryName: 'US',
-    },
-    to: {
-      medianIncome: 7_700_000,
-      q1Income: 5_200_000,
-      pppPerIntlDollar: 6_957,
-      currencySymbol: '\u20AB',
-      countryName: 'VN',
-    },
-  },
-  'EUR→USD': {
-    from: {
-      medianIncome: 2_183,
-      q1Income: 1_700,
-      pppPerIntlDollar: 0.70,
-      currencySymbol: '\u20AC',
-      countryName: 'France',
-    },
-    to: {
-      medianIncome: 4_200,
-      q1Income: 2_800,
-      pppPerIntlDollar: 1.00,
-      currencySymbol: '$',
-      countryName: 'US',
-    },
-  },
-  'USD→EUR': {
-    from: {
-      medianIncome: 4_200,
-      q1Income: 2_800,
-      pppPerIntlDollar: 1.00,
-      currencySymbol: '$',
-      countryName: 'US',
-    },
-    to: {
-      medianIncome: 2_183,
-      q1Income: 1_700,
-      pppPerIntlDollar: 0.70,
-      currencySymbol: '\u20AC',
-      countryName: 'France',
-    },
-  },
 };
 
 /**
