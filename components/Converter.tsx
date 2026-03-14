@@ -159,7 +159,7 @@ export const Converter: React.FC<ConverterProps> = ({ getRate }) => {
   const incomeData = INCOME_DATA[incomeKey];
 
   return (
-    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-5 shadow-2xl relative">
       {/* Decorative Glow */}
       <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/8 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none"></div>
