@@ -97,7 +97,7 @@ const App: React.FC = () => {
 
         {/* Footer */}
         <footer className="text-center text-slate-600 text-xs mt-4 pb-6">
-          <p>Updated rates as of 27 Mar 2026 &middot; Works Offline</p>
+          <p>Fixed Exchange Rate &middot; Works Offline</p>
         </footer>
       </main>
 
