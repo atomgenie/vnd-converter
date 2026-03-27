@@ -76,23 +76,23 @@ export const CURRENCY_CONFIGS: Record<Currency, CurrencyConfig> = {
 };
 
 // ---------------------------------------------------------------------------
-// Fallback exchange rates — all expressed as "1 EUR = X <currency>"
+// Exchange rates — all expressed as "1 EUR = X <currency>"
 // To convert between any pair: amount * (rateOf(to) / rateOf(from))
 // ---------------------------------------------------------------------------
 
-export const FALLBACK_RATES_FROM_EUR: Record<Currency, number> = {
+export const RATES_FROM_EUR: Record<Currency, number> = {
   [Currency.EUR]: 1,
-  [Currency.VND]: 10_000_000_000 / 326_224, // ≈ 30 653.78
-  [Currency.USD]: 1.08,
+  [Currency.VND]: 30_311.5, // 2026-03-27 market rate (EUR/VND)
+  [Currency.USD]: 1.1517, // ECB reference rate on 2026-03-27 (EUR/USD)
 };
 
 /**
  * Get the exchange rate from one currency to another.
- * Uses EUR as the base: rate = FALLBACK_RATES_FROM_EUR[to] / FALLBACK_RATES_FROM_EUR[from]
+ * Uses EUR as the base: rate = RATES_FROM_EUR[to] / RATES_FROM_EUR[from]
  */
 export function getRate(from: Currency, to: Currency): number {
   if (from === to) return 1;
-  return FALLBACK_RATES_FROM_EUR[to] / FALLBACK_RATES_FROM_EUR[from];
+  return RATES_FROM_EUR[to] / RATES_FROM_EUR[from];
 }
 
 // ---------------------------------------------------------------------------
