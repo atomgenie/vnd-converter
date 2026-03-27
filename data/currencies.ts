@@ -82,8 +82,8 @@ export const CURRENCY_CONFIGS: Record<Currency, CurrencyConfig> = {
 
 export const RATES_FROM_EUR: Record<Currency, number> = {
   [Currency.EUR]: 1,
-  [Currency.VND]: 10_000_000_000 / 326_224, // ≈ 30 653.78
-  [Currency.USD]: 1.08,
+  [Currency.VND]: 30_311.5, // 2026-03-27 market rate (EUR/VND)
+  [Currency.USD]: 1.1517, // ECB reference rate on 2026-03-27 (EUR/USD)
 };
 
 /**
